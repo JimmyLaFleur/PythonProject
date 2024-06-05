@@ -68,11 +68,12 @@ def get_text_messages(message):
         spendings = DBManager.execute_query_with_return(connection, f"SELECT * FROM spendings WHERE user_id = '{user_pk}'")
         print(spendings)
         for x in spendings:
-            s = f"Трата\n id: {x[0]},\n user_id: {x[1]},\n цена: {x[2]},\n название: {x[3]},\n категория: {x[4]},\n дата {x[5]},\n рейтинг {x[6]}"
+            s = f"Трата\n id: {x[0]},\n цена: {x[2]},\n название: {x[3]},\n категория: {x[4]},\n дата {x[5]},\n рейтинг {x[6]}"
 
             bot.send_message(user_id, s)
     else:
         bot.send_message(user_id, "Я тебя не понимаю.")
+# def check_cancel(message):
 
 def get_title(message):
     user_id = message.from_user.id
