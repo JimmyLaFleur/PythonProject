@@ -37,6 +37,13 @@ def handle_docs_photo(message):
 bot = telebot.TeleBot(config.TOKEN)
 connection = DBManager.connect()
 tmp_dict = {}
+
+commands = types.ReplyKeyboardMarkup(resize_keyboard=True)
+btn1 = types.KeyboardButton("Добавить трату")
+btn2 = types.KeyboardButton("Мои траты")
+btn3 = types.KeyboardButton("Удалить трату")
+commands.add(btn1, btn3, btn2)
+
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.send_message(message.from_user.id, "Привет! Я помогу тебе следить за своими тратами и анализировать их!")
@@ -44,11 +51,7 @@ def start(message):
     DBManager.add_user(connection, message.from_user.id)
 
     bot.send_message(message.from_user.id, "Создал ячейку в базе")
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btn1 = types.KeyboardButton("Добавить трату")
-    btn2 = types.KeyboardButton("Мои траты")
-    markup.add(btn1, btn2)
-    bot.send_message(message.chat.id, text="Привет, {0.first_name}! Я тестовый бот".format(message.from_user), reply_markup=markup)
+    bot.send_message(message.chat.id, text="Привет, {0.first_name}! Я тестовый бот".format(message.from_user), reply_markup=commands)
 
 
 
@@ -62,6 +65,10 @@ def get_text_messages(message):
         tmp_dict[user_id]['user_id'] = user_id
         bot.send_message(user_id, "Напиши название траты (не больше 50 символов)")
         bot.register_next_step_handler(message, get_title)
+    elif message.text == "Удалить трату":
+        bot.send_message(user_id, "Напиши id траты")
+        bot.register_next_step_handler(message, delete_spending)
+
     elif message.text == "Мои траты":
         tg_pk = DBManager.execute_query_with_return(connection, f'SELECT id FROM telegram_profiles WHERE user_id={user_id}')[0][0]
         user_pk = DBManager.execute_query_with_return(connection, f'SELECT id FROM users WHERE telegram_id={tg_pk}')[0][0]
@@ -74,7 +81,20 @@ def get_text_messages(message):
     else:
         bot.send_message(user_id, "Я тебя не понимаю.")
 # def check_cancel(message):
+def delete_spending(message):
+    user_id = message.from_user.id
+    spending_id = message.text
+    try:
+        spending_id = int(spending_id)
 
+        tg_pk = DBManager.execute_query_with_return(connection, f'SELECT id FROM telegram_profiles WHERE user_id={user_id}')[0][0]
+        user_pk = DBManager.execute_query_with_return(connection, f'SELECT id FROM users WHERE telegram_id={tg_pk}')[0][0]
+        DBManager.execute_query(connection,f"DELETE FROM spendings WHERE user_id = {user_pk} AND id = {spending_id}")
+
+        bot.send_message(user_id, "Трата удалена.", reply_markup=commands)
+    except Exception as e:
+        bot.send_message(user_id, "id должно быть числом "+str(e))
+        bot.register_next_step_handler(message, delete_spending)
 def get_title(message):
     user_id = message.from_user.id
     title = message.text
@@ -106,6 +126,7 @@ def get_date(message):
         tmp_dict[user_id]['date'] = str(date)
         DBManager.add_spending(connection, tmp_dict[user_id])
         bot.send_message(user_id, 'Трата добавлена')
+        del tmp_dict[user_id]
     except Exception as e:
         print("Format error: ", e)
         bot.send_message(user_id, 'Введи дату траты в формате ДД.ММ.ГГГГ или нажми кнопку "сегодня"')
