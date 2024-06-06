@@ -1,6 +1,22 @@
 import psycopg2
 from config import host, user, password, db_name
 
+
+
+
+def drop_db(connection):
+    with connection.cursor() as cursor:
+        cursor.execute('''
+        DROP DATABASE IF EXISTS hiod''')
+        print("[INFO] DB dropped")
+def create_db(connection):
+    with connection.cursor() as cursor:
+        cursor.execute('''
+        DROP TABLE IF EXISTS spendings;
+        DROP TABLE IF EXISTS users;
+        DROP TABLE IF EXISTS telegram_profiles;
+        DROP TABLE IF EXISTS categories;''')
+        print("[INFO] DB created")
 def connect():
     try:
         connection = psycopg2.connect(
@@ -55,14 +71,14 @@ def create_tables(connection):
 def add_spending(connection, dict):
     with connection.cursor() as cursor:
         print(dict)
-        tg_pk = execute_query_with_return(connection, f'SELECT id FROM telegram_profiles WHERE user_id={dict['user_id']}')[0][0]
+        tg_pk = execute_query_with_return(connection, f'SELECT id FROM telegram_profiles WHERE user_id={dict["user_id"]}')[0][0]
         user_pk = execute_query_with_return(connection, f'SELECT id FROM users WHERE telegram_id={tg_pk}')[0][0]
         cursor.execute(f'''INSERT INTO spendings(user_id, price, title, category_id, date) VALUES (
         {user_pk}, 
         {dict['price']}, 
         '{dict['title']}', 
         {0}, 
-        TO_TIMESTAMP('{dict['date']+" 00:00:00"}', 'YYYY-MM-DD HH24:MI:SS'))''')
+        TO_TIMESTAMP('{dict["date"]+" 00:00:00"}', 'YYYY-MM-DD HH24:MI:SS'))''')
         print("[INFO] Spending added")
 def close_connection(connection):
     connection.close()
