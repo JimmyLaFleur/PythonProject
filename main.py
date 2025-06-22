@@ -1,8 +1,8 @@
 from datetime import datetime
-import sqlite3
-import telebot
 from telebot import types
 import config
+import sqlite3
+import telebot
 
 bot = telebot.TeleBot(config.TOKEN)
 conn = sqlite3.connect('finance_bot.db', check_same_thread=False)
